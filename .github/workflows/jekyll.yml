@@ -11,7 +11,7 @@ on:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -26,7 +26,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
     steps:
@@ -47,25 +47,25 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-      - name: Test write permissions
-        id: testperm
+      - name: Enable GitHub Pages
+        id: enable_pages
         run: |
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           REPO="${{ github.repository }}"
-          SHA="${{ github.sha }}"
           AUTH="Authorization: Bearer $TOKEN"
           ACCEPT="Accept: application/vnd.github+json"
-          echo "=== Test contents write (create temp file) ==="
-          curl -s -o /tmp/c.txt -w "HTTP %{http_code}\n" -X PUT -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/contents/.pages_test \
-            -d "{\"message\":\"test write permission\",\"content\":\"dGVzdA==\"}"
-          cat /tmp/c.txt
+          echo "=== Current Pages state ==="
+          curl -s -H "$AUTH" -H "$ACCEPT" https://api.github.com/repos/$REPO/pages
           echo ""
-          echo "=== Test pages create ==="
-          curl -s -o /tmp/p.txt -w "HTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
+          echo "=== Enable Pages (legacy, deploy from master root) ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/pages \
+            -d '{"build_type":"legacy","source":{"branch":"master","path":"/"}}'
+          echo ""
+          echo "=== Enable Pages (workflow build) ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
             https://api.github.com/repos/$REPO/pages \
             -d '{"build_type":"workflow"}'
-          cat /tmp/p.txt
           echo ""
       - name: Configure GitHub Pages
         id: pages
