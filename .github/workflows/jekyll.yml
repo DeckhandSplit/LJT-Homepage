@@ -10,7 +10,10 @@ on:
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions: write-all
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -22,7 +25,10 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-24.04
-    permissions: write-all
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -41,20 +47,25 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-      - name: Diagnose GitHub Pages permissions
-        id: diag
+      - name: Test write permissions
+        id: testperm
         run: |
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
           AUTH="Authorization: Bearer $TOKEN"
           ACCEPT="Accept: application/vnd.github+json"
-          echo "=== POST /pages response headers ==="
-          curl -s -D /tmp/h.txt -o /tmp/b.txt -X POST -H "$AUTH" -H "$ACCEPT" \
+          echo "=== Test contents write (create temp file) ==="
+          curl -s -o /tmp/c.txt -w "HTTP %{http_code}\n" -X PUT -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/contents/.pages_test \
+            -d "{\"message\":\"test write permission\",\"content\":\"dGVzdA==\"}"
+          cat /tmp/c.txt
+          echo ""
+          echo "=== Test pages create ==="
+          curl -s -o /tmp/p.txt -w "HTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
             https://api.github.com/repos/$REPO/pages \
             -d '{"build_type":"workflow"}'
-          cat /tmp/h.txt
-          echo "=== body ==="
-          cat /tmp/b.txt
+          cat /tmp/p.txt
           echo ""
       - name: Configure GitHub Pages
         id: pages
@@ -76,7 +87,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    permissions: write-all
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
