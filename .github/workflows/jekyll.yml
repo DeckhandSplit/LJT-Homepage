@@ -43,6 +43,24 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
+      - name: Try enable Pages
+        run: |
+          TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          REPO="${{ github.repository }}"
+          AUTH="Authorization: Bearer $TOKEN"
+          ACCEPT="Accept: application/vnd.github+json"
+          echo "=== Token identity ==="
+          curl -s -H "$AUTH" -H "$ACCEPT" https://api.github.com/user | head -c 400
+          echo ""
+          echo "=== POST /pages empty body ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/pages -d '{}'
+          echo ""
+          echo "=== POST /pages legacy master root ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/pages \
+            -d '{"build_type":"legacy","source":{"branch":"master","path":"/"}}'
+          echo ""
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
