@@ -41,17 +41,26 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-      - name: Enable GitHub Pages
+      - name: Diagnose and enable GitHub Pages
         id: enable_pages
         run: |
-          echo "Attempting to enable GitHub Pages..."
-          HTTP_CODE=$(curl -s -o /tmp/pages_response.json -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/pages \
-            -d '{"build_type":"workflow"}')
-          echo "HTTP status: $HTTP_CODE"
-          cat /tmp/pages_response.json
+          TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          REPO="${{ github.repository }}"
+          AUTH="Authorization: Bearer $TOKEN"
+          ACCEPT="Accept: application/vnd.github+json"
+          echo "=== Current workflow permissions ==="
+          curl -s -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/actions/permissions/workflow
+          echo ""
+          echo "=== Setting workflow permissions to write ==="
+          curl -s -X PUT -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/actions/permissions/workflow \
+            -d '{"default_workflow_permissions":"write","can_approve_pull_request_reviews":true}'
+          echo ""
+          echo "=== Creating Pages site (workflow build) ==="
+          curl -s -X POST -H "$AUTH" -H "$ACCEPT" \
+            https://api.github.com/repos/$REPO/pages \
+            -d '{"build_type":"workflow"}'
           echo ""
       - name: Configure GitHub Pages
         id: pages
