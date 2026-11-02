@@ -1,4 +1,5 @@
 # Workflow for building and deploying an Academic Pages / Jekyll site to GitHub Pages
+# Deploys on push to master; can also be run manually.
 name: Deploy Academic Pages template site to Pages
 
 on:
@@ -43,26 +44,6 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-      - name: Diagnose and enable
-        run: |
-          TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          REPO="${{ github.repository }}"
-          AUTH="Authorization: Bearer $TOKEN"
-          ACCEPT="Accept: application/vnd.github+json"
-          echo "=== Set workflow default permissions to write ==="
-          curl -s -w "\nHTTP %{http_code}\n" -X PUT -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/actions/permissions/workflow \
-            -d '{"default_workflow_permissions":"write","can_approve_pull_request_reviews":true}'
-          echo ""
-          echo "=== Enable Pages (workflow) ==="
-          curl -s -w "\nHTTP %{http_code}\n" -X POST -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/pages \
-            -d '{"build_type":"workflow"}'
-          echo ""
-          echo "=== Get Pages ==="
-          curl -s -w "\nHTTP %{http_code}\n" -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/pages
-          echo ""
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
