@@ -41,26 +41,20 @@ jobs:
       - name: Minify JS files
         run: |
           uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-      - name: Diagnose and enable GitHub Pages
-        id: enable_pages
+      - name: Diagnose GitHub Pages permissions
+        id: diag
         run: |
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           REPO="${{ github.repository }}"
           AUTH="Authorization: Bearer $TOKEN"
           ACCEPT="Accept: application/vnd.github+json"
-          echo "=== Current workflow permissions ==="
-          curl -s -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/actions/permissions/workflow
-          echo ""
-          echo "=== Setting workflow permissions to write ==="
-          curl -s -X PUT -H "$AUTH" -H "$ACCEPT" \
-            https://api.github.com/repos/$REPO/actions/permissions/workflow \
-            -d '{"default_workflow_permissions":"write","can_approve_pull_request_reviews":true}'
-          echo ""
-          echo "=== Creating Pages site (workflow build) ==="
-          curl -s -X POST -H "$AUTH" -H "$ACCEPT" \
+          echo "=== POST /pages response headers ==="
+          curl -s -D /tmp/h.txt -o /tmp/b.txt -X POST -H "$AUTH" -H "$ACCEPT" \
             https://api.github.com/repos/$REPO/pages \
             -d '{"build_type":"workflow"}'
+          cat /tmp/h.txt
+          echo "=== body ==="
+          cat /tmp/b.txt
           echo ""
       - name: Configure GitHub Pages
         id: pages
