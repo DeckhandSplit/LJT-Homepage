@@ -1,5 +1,4 @@
 # Workflow for building and deploying an Academic Pages / Jekyll site to GitHub Pages
-# Deploys on push to master; can also be run manually.
 name: Deploy Academic Pages template site to Pages
 
 on:
@@ -62,7 +61,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages
